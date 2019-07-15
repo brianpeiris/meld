@@ -3,42 +3,55 @@ import {
   Scene,
   Mesh,
   SphereBufferGeometry,
-  MeshBasicMaterial,
+  MeshStandardMaterial,
   WebGLRenderer,
   PerspectiveCamera,
+  AmbientLight,
+  DirectionalLight,
   Object3D,
   Group
 } from "three";
+import WEBVR from "three/examples/js/vr/WebVR.js";
+import { Pool } from "./Pool";
 
 const root = new Group();
+let leftController;
+let rightController;
 
 (() => {
   document.body.style.margin = "0";
   document.body.style.lineHeight = "0";
 
-  const renderer = new WebGLRenderer();
+  const renderer = new WebGLRenderer({antialias: true});
+  renderer.vr.enabled = true;
   document.body.append(renderer.domElement);
+
+  rightController = renderer.vr.getController(0);
+  leftController = renderer.vr.getController(1);
+  setTimeout(() => {
+    rightController.addEventListener("selectstart", window.rightControllerPressed)
+    rightController.addEventListener("selectend", window.rightControllerReleased)
+    leftController.addEventListener("selectstart", window.leftControllerPressed)
+    leftController.addEventListener("selectend", window.leftControllerReleased)
+  });
+
+  document.body.append(WEBVR.createButton(renderer));
 
   const scene = new Scene();
   const camera = new PerspectiveCamera();
-  const dolly = new Object3D();
-  dolly.position.z = 3;
-  dolly.add(camera);
-  scene.add(dolly);
 
   scene.add(root);
 
   function render() {
-    requestAnimationFrame(render);
     pool.reset();
     transform.identity();
-    for (const child of root.children) {
-      root.remove(child);
+    for (let i = root.children.length - 1; i > 0; i--) {
+      root.remove(root.children[i]);
     }
     window.draw();
     renderer.render(scene, camera);
   }
-  requestAnimationFrame(render);
+  renderer.setAnimationLoop(render);
 
   function resize() {
     const w = window.innerWidth;
@@ -51,41 +64,11 @@ const root = new Group();
   resize();
 })();
 
-class Pool {
-  private pools = {};
-  private immutablePools = {};
-  get(key: string, generator: Function) {
-    if (!this.pools[key]) {
-      this.pools[key] = { used: 0, items: [] };
-    }
-    const pool = this.pools[key];
-
-    pool.used++;
-
-    if (!pool.items[pool.used - 1]) {
-      pool.items.push(generator());
-    }
-    return pool.items[pool.used - 1];
-  }
-  getImmutable(key: Array<any>, generator: Function) {
-    const keyStr = key.join("-");
-    if (!this.immutablePools[keyStr]) {
-      this.immutablePools[keyStr] = generator();
-    }
-    return this.immutablePools[keyStr];
-  }
-  reset() {
-    for (const key in this.pools) {
-      this.pools[key].used = 0;
-    }
-  }
-}
-
 const pool = new Pool();
 
 const transform = new Matrix4();
 const temp = new Matrix4();
-let material;
+let material = pool.get("material", () => new MeshStandardMaterial());
 
 const api: API = {
   sphere: (r: number = 0.5) => {
@@ -93,16 +76,22 @@ const api: API = {
       ["sphere", r],
       () => new SphereBufferGeometry(r, 8, 8)
     );
-    const sphere = new Mesh(geo, material);
-    sphere.applyMatrix(transform);
+    const sphere:Mesh = pool.get("mesh", () => {
+      const mesh = new Mesh()
+      mesh.matrixAutoUpdate = false;
+      return mesh;
+    });
+    sphere.geometry = geo;
+    sphere.material = material;
+    sphere.matrix.copy(transform);
     root.add(sphere);
   },
   translate: (x, y, z) => {
     temp.makeTranslation(x, y, z);
-    transform.premultiply(temp);
+    transform.multiply(temp);
   },
   fill: (color: any, g?: number, b?: number) => {
-    material = pool.get("material", () => new MeshBasicMaterial());
+    material = pool.get("material", () => new MeshStandardMaterial());
     if (typeof color === "string") {
       material.color.set(color);
     } else {
@@ -118,6 +107,22 @@ const api: API = {
   },
   floor: x => {
     return Math.floor(x);
+  },
+  resetMatrix: () => {
+    transform.identity();
+  },
+  applyMatrix: m => {
+    if (m) transform.multiply(m);
+  },
+  leftControllerMatrix: leftController.matrix,
+  rightControllerMatrix: rightController.matrix,
+  lights: () => {
+    root.add(pool.get("ambientlight", () => new AmbientLight()));
+    root.add(pool.get("directionallight", () => {
+      const light = new DirectionalLight()
+      light.position.set(2, 2, 1);
+      return light;
+    })
   }
 };
 

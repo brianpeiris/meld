@@ -1,15 +1,35 @@
-export function setup() {
+export function setup() {}
 
+let leftControllerColor = "darkblue";
+export function leftControllerPressed() {
+  leftControllerColor = "blue";
+}
+export function leftControllerReleased() {
+  leftControllerColor = "darkblue";
 }
 
-let x = 0;
-export function draw() {
-  translate(sin(x), 0, 0);
-  fill(100 + x * 100, 0, 0);
-  sphere(0.25);
+let rightControllerColor = "darkred";
+export function rightControllerPressed() {
+  rightControllerColor = "red";
+}
+export function rightControllerReleased() {
+  rightControllerColor = "darkred";
+}
 
-  translate(0, 0.5, 0);
+export function draw() {
+  lights();
+
+  applyMatrix(leftControllerMatrix);
+  fill(leftControllerColor);
+  sphere(0.05);
+
+  resetMatrix();
+  applyMatrix(rightControllerMatrix);
+  fill(rightControllerColor);
+  sphere(0.05);
+
+  resetMatrix();
+  translate(0, 1, -0.5);
   fill("white");
-  sphere();
-  x += 0.01;
+  sphere(0.1);
 }
