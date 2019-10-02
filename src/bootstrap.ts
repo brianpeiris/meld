@@ -122,7 +122,7 @@ const api: API = {
       const light = new DirectionalLight()
       light.position.set(2, 2, 1);
       return light;
-    })
+    }));
   }
 };
 
