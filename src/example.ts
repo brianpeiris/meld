@@ -29,7 +29,7 @@ export function draw() {
   sphere(0.05);
 
   resetMatrix();
-  translate(0, 1, -0.5);
+  translate(0, 1.6, -1.5);
   fill("white");
   sphere(0.1);
 }

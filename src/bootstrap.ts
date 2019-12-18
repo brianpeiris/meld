@@ -11,7 +11,7 @@ import {
   Object3D,
   Group
 } from "three";
-import WEBVR from "three/examples/js/vr/WebVR.js";
+import { WEBVR } from "three/examples/jsm/vr/WebVR.js";
 import { Pool } from "./Pool";
 
 const root = new Group();
@@ -39,7 +39,6 @@ let rightController;
 
   const scene = new Scene();
   const camera = new PerspectiveCamera();
-
   scene.add(root);
 
   function render() {
