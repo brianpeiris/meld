@@ -35,7 +35,7 @@ let rightController;
     leftController.addEventListener("selectend", window.leftControllerReleased)
   });
 
-  document.body.append(WEBVR.createButton(renderer));
+  document.body.append(WEBVR.createButton(renderer, null));
 
   const scene = new Scene();
   const camera = new PerspectiveCamera();
